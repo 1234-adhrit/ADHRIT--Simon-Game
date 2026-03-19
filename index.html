@@ -1,0 +1,1363 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simon Arena</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Bungee&family=Sora:wght@300;400;600;700&display=swap");
+
+      :root {
+        --bg-1: #0a1622;
+        --bg-2: #141b3a;
+        --bg-3: #1a0f2e;
+        --accent: #f8b500;
+        --text: #ecf2ff;
+        --muted: #98a2c6;
+        --glass: rgba(255, 255, 255, 0.08);
+        --glass-strong: rgba(255, 255, 255, 0.14);
+        --shadow: 0 20px 60px rgba(4, 9, 25, 0.6);
+        --pad-size: 260px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Sora", system-ui, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at 10% 20%, #1a2a3b 0%, transparent 40%),
+          radial-gradient(circle at 80% 10%, #3a174b 0%, transparent 45%),
+          linear-gradient(145deg, var(--bg-1), var(--bg-2) 55%, var(--bg-3));
+        min-height: 100vh;
+      }
+
+      .bg-orb {
+        position: fixed;
+        width: 420px;
+        height: 420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 70%);
+        filter: blur(2px);
+        opacity: 0.4;
+        z-index: 0;
+      }
+
+      .orb-left {
+        left: -120px;
+        bottom: -160px;
+      }
+
+      .orb-right {
+        right: -140px;
+        top: -180px;
+      }
+
+      .app {
+        position: relative;
+        z-index: 1;
+        padding: 40px 6vw 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .title {
+        font-family: "Bungee", sans-serif;
+        font-size: clamp(2rem, 4vw, 3.6rem);
+        letter-spacing: 2px;
+        margin: 0;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 1rem;
+        max-width: 420px;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(280px, 0.85fr);
+        gap: 32px;
+        margin-top: 30px;
+      }
+
+      .panel {
+        background: linear-gradient(140deg, rgba(255, 255, 255, 0.08), rgba(12, 14, 31, 0.6));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 26px;
+        padding: 26px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .board-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .simon {
+        position: relative;
+        width: min(80vw, var(--pad-size));
+        height: min(80vw, var(--pad-size));
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 14px;
+        padding: 14px;
+        border-radius: 36px;
+        background: rgba(7, 11, 27, 0.8);
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6), 0 18px 40px rgba(7, 10, 25, 0.6);
+      }
+
+      .pad {
+        border: none;
+        border-radius: 22px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+        outline: none;
+        box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.08), 0 10px 18px rgba(0, 0, 0, 0.35);
+        filter: saturate(0.9);
+      }
+
+      .pad:disabled {
+        cursor: not-allowed;
+      }
+
+      .pad.green {
+        background: radial-gradient(circle at top, #63ff98, #14a15e 70%);
+      }
+
+      .pad.red {
+        background: radial-gradient(circle at top, #ff6b6b, #c62828 70%);
+      }
+
+      .pad.yellow {
+        background: radial-gradient(circle at top, #ffe66d, #c89b21 70%);
+      }
+
+      .pad.blue {
+        background: radial-gradient(circle at top, #62b6ff, #1e63b8 70%);
+      }
+
+      .pad.active {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.55), 0 0 40px rgba(255, 255, 255, 0.35);
+        filter: saturate(1.15) brightness(1.1);
+      }
+
+      .center-display {
+        position: absolute;
+        inset: 50% auto auto 50%;
+        transform: translate(-50%, -50%);
+        width: 70%;
+        background: rgba(5, 8, 22, 0.9);
+        border-radius: 24px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        display: grid;
+        gap: 14px;
+      }
+
+      .status-text {
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .score {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .score span {
+        font-weight: 600;
+        font-size: 1.2rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        border: none;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: linear-gradient(120deg, #2a7ef7, #5d47ff);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 8px 16px rgba(51, 94, 255, 0.3);
+      }
+
+      .btn.secondary {
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn.warn {
+        background: linear-gradient(120deg, #ff7a7a, #ff3f5f);
+        box-shadow: 0 8px 16px rgba(255, 95, 109, 0.35);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .turn-hint {
+        font-size: 1rem;
+        color: var(--text);
+        text-align: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .mode-toggle {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .mode-toggle button {
+        flex: 1;
+        border: none;
+        border-radius: 16px;
+        padding: 12px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .mode-toggle button.active {
+        background: linear-gradient(120deg, #ffb347, #ffcc33);
+        color: #1c1c1c;
+      }
+
+      .section-title {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        color: var(--muted);
+        margin: 16px 0 10px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .field input,
+      .field select {
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(10, 13, 26, 0.7);
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+
+      .inline-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
+
+      .checkbox input {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+      }
+
+      .connection-status {
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .connection-status.online {
+        color: #7bffbc;
+        background: rgba(86, 255, 166, 0.18);
+        border-color: rgba(86, 255, 166, 0.4);
+      }
+
+      .connection-status.pending {
+        color: #ffdd88;
+        background: rgba(255, 204, 51, 0.18);
+        border-color: rgba(255, 204, 51, 0.4);
+      }
+
+      .connection-status.offline {
+        color: #ffb0b0;
+        background: rgba(255, 120, 120, 0.18);
+        border-color: rgba(255, 120, 120, 0.35);
+      }
+
+      .server-info {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .server-code {
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+      }
+
+      .error {
+        color: #ffb4b4;
+        font-size: 0.9rem;
+        min-height: 20px;
+      }
+
+      .players-list,
+      .scoreboard-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      .players-list li,
+      .scoreboard-list li {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .players-list li.turn {
+        background: rgba(255, 204, 51, 0.2);
+        border-color: rgba(255, 204, 51, 0.35);
+      }
+
+      .players-list li.out {
+        opacity: 0.55;
+        text-decoration: line-through;
+      }
+
+      .players-list .you {
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .scoreboard-list .score {
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .chat-box {
+        background: rgba(8, 12, 30, 0.6);
+        border-radius: 18px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .chat-messages {
+        max-height: 220px;
+        overflow-y: auto;
+        display: grid;
+        gap: 10px;
+        padding-right: 6px;
+      }
+
+      .chat-message {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .chat-meta {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .chat-input {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .chat-input input {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(10, 13, 26, 0.7);
+        color: var(--text);
+      }
+
+
+
+      .note {
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-top: 10px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 920px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .board-panel {
+          order: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-orb orb-left"></div>
+    <div class="bg-orb orb-right"></div>
+    <div class="app">
+      <header>
+        <div>
+          <h1 class="title">Simon Arena</h1>
+          <p class="subtitle">
+            A bold, turn-based Simon challenge. Play solo or join a server to
+            share the sequence and take turns.
+          </p>
+        </div>
+      </header>
+
+      <div class="main-grid">
+        <section class="panel board-panel">
+          <div class="simon">
+            <button class="pad green" data-color="green" aria-label="Green pad"></button>
+            <button class="pad red" data-color="red" aria-label="Red pad"></button>
+            <button class="pad yellow" data-color="yellow" aria-label="Yellow pad"></button>
+            <button class="pad blue" data-color="blue" aria-label="Blue pad"></button>
+
+            <div class="center-display">
+              <div class="status-text" id="statusText">Press start to play.</div>
+              <div class="score">
+                <span id="scoreLabel">Score</span>
+                <span id="scoreValue">0</span>
+              </div>
+              <div class="controls">
+                <button class="btn" id="startBtn">Start</button>
+                <button class="btn secondary" id="resetBtn">Reset</button>
+                <button class="btn secondary" id="muteBtn">Mute</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="turn-hint" id="turnHint">Solo mode: repeat the sequence.</div>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">Appearance</div>
+          <div class="field">
+            <label for="themeSelect">Theme</label>
+            <select id="themeSelect"></select>
+          </div>
+
+          <div class="mode-toggle">
+            <button id="modeSoloBtn" class="active">Solo</button>
+            <button id="modeMultiBtn">Server</button>
+          </div>
+
+          <div id="soloPanel">
+            <div class="section-title">Solo Play</div>
+            <p class="note">
+              No name needed. Each round adds a new color. How far can you go?
+            </p>
+          </div>
+
+          <div id="multiPanel" class="hidden">
+            <div class="section-title">Server Connection</div>
+            <div class="field">
+              <label for="serverUrl">Server URL</label>
+              <input id="serverUrl" placeholder="ws://your-server:3000" />
+            </div>
+            <div class="inline-actions">
+              <button class="btn secondary" id="connectBtn">Connect</button>
+              <span class="connection-status offline" id="connectionStatus">Offline</span>
+            </div>
+            <p class="note">
+              Host the multiplayer server and share the URL. Friends can open
+              the server page or paste the WebSocket URL here.
+            </p>
+
+            <div class="section-title">Multiplayer Server</div>
+            <div class="field">
+              <label for="playerName">Player name (required)</label>
+              <input id="playerName" placeholder="Enter your name" maxlength="16" />
+            </div>
+            <div class="field">
+              <label for="serverCode">Server code</label>
+              <input id="serverCode" placeholder="e.g. R4N9K2" maxlength="8" />
+            </div>
+            <div class="field">
+              <label class="checkbox">
+                <input type="checkbox" id="spectatorToggle" />
+                <span>Join as spectator (watch only)</span>
+              </label>
+            </div>
+            <div class="inline-actions">
+              <button class="btn" id="createServerBtn">Create server</button>
+              <button class="btn secondary" id="joinServerBtn">Join server</button>
+            </div>
+            <div class="error" id="multiError"></div>
+
+            <div class="server-info hidden" id="serverInfo">
+              <div>Server code</div>
+              <div class="server-code" id="serverCodeDisplay">------</div>
+              <div class="inline-actions">
+                <button class="btn secondary" id="copyCodeBtn">Copy code</button>
+                <button class="btn warn" id="leaveServerBtn">Leave server</button>
+              </div>
+            </div>
+
+            <div class="section-title">Players</div>
+            <ul class="players-list" id="playersList"></ul>
+
+            <div class="section-title">Spectators</div>
+            <ul class="players-list" id="spectatorsList"></ul>
+
+            <div class="section-title">Scoreboard</div>
+            <ul class="scoreboard-list" id="scoreboardList"></ul>
+
+            <div class="section-title">Lobby Chat</div>
+            <div class="chat-box">
+              <div class="chat-messages" id="chatMessages"></div>
+              <div class="chat-input">
+                <input id="chatInput" placeholder="Type a message" maxlength="120" />
+                <button class="btn secondary" id="chatSendBtn">Send</button>
+              </div>
+            </div>
+
+            <p class="note">
+              Turns rotate. On your turn, replay the full sequence and then add
+              one new color for the next player.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const padButtons = Array.from(document.querySelectorAll(".pad"));
+      const statusText = document.getElementById("statusText");
+      const scoreValue = document.getElementById("scoreValue");
+      const scoreLabel = document.getElementById("scoreLabel");
+      const turnHint = document.getElementById("turnHint");
+      const startBtn = document.getElementById("startBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const muteBtn = document.getElementById("muteBtn");
+      const modeSoloBtn = document.getElementById("modeSoloBtn");
+      const modeMultiBtn = document.getElementById("modeMultiBtn");
+      const soloPanel = document.getElementById("soloPanel");
+      const multiPanel = document.getElementById("multiPanel");
+      const playerNameInput = document.getElementById("playerName");
+      const serverCodeInput = document.getElementById("serverCode");
+      const serverUrlInput = document.getElementById("serverUrl");
+      const connectBtn = document.getElementById("connectBtn");
+      const connectionStatus = document.getElementById("connectionStatus");
+      const createServerBtn = document.getElementById("createServerBtn");
+      const joinServerBtn = document.getElementById("joinServerBtn");
+      const multiError = document.getElementById("multiError");
+      const serverInfo = document.getElementById("serverInfo");
+      const serverCodeDisplay = document.getElementById("serverCodeDisplay");
+      const copyCodeBtn = document.getElementById("copyCodeBtn");
+      const leaveServerBtn = document.getElementById("leaveServerBtn");
+      const playersList = document.getElementById("playersList");
+      const spectatorsList = document.getElementById("spectatorsList");
+      const scoreboardList = document.getElementById("scoreboardList");
+      const chatMessages = document.getElementById("chatMessages");
+      const chatInput = document.getElementById("chatInput");
+      const chatSendBtn = document.getElementById("chatSendBtn");
+      const themeSelect = document.getElementById("themeSelect");
+      const spectatorToggle = document.getElementById("spectatorToggle");
+
+      const toneMap = {
+        green: 329.63,
+        red: 261.63,
+        yellow: 392.0,
+        blue: 440.0,
+      };
+
+      const padMap = padButtons.reduce((map, btn) => {
+        map[btn.dataset.color] = btn;
+        return map;
+      }, {});
+
+      const themes = [
+        {
+          id: "neon",
+          name: "Neon Night",
+          vars: {
+            "--bg-1": "#0a1622",
+            "--bg-2": "#141b3a",
+            "--bg-3": "#1a0f2e",
+            "--accent": "#f8b500",
+          },
+        },
+        {
+          id: "aqua",
+          name: "Aqua Pulse",
+          vars: {
+            "--bg-1": "#031a1d",
+            "--bg-2": "#093044",
+            "--bg-3": "#0b3b3b",
+            "--accent": "#4efcff",
+          },
+        },
+        {
+          id: "ember",
+          name: "Ember Blaze",
+          vars: {
+            "--bg-1": "#2a0b0b",
+            "--bg-2": "#3c1111",
+            "--bg-3": "#2a0b1c",
+            "--accent": "#ff7b3a",
+          },
+        },
+        {
+          id: "forest",
+          name: "Forest Glow",
+          vars: {
+            "--bg-1": "#061b12",
+            "--bg-2": "#0b2d1c",
+            "--bg-3": "#092b2b",
+            "--accent": "#7bffb4",
+          },
+        },
+      ];
+
+      let mode = "solo";
+      let muted = false;
+      let audioContext = null;
+      let audioPrimed = false;
+
+      const soloState = {
+        sequence: [],
+        step: 0,
+        awaiting: false,
+        playing: false,
+        score: 0,
+      };
+
+      let roomState = null;
+      let roomId = null;
+      let multiReady = false;
+      let lastReplayToken = "";
+
+      let socket = null;
+      let socketReady = false;
+      let pendingAction = null;
+
+      const playerId = (() => {
+        if (window.crypto && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return `p-${Math.random().toString(36).slice(2, 8)}-${Date.now()
+          .toString(36)
+          .slice(-4)}`;
+      })();
+
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      function primeAudio() {
+        if (audioPrimed) return;
+        audioPrimed = true;
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === "suspended") {
+          audioContext.resume();
+        }
+      }
+
+      function playTone(color, duration = 300) {
+        if (muted) return;
+        primeAudio();
+        const ctx = audioContext;
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = toneMap[color] || 300;
+        gain.gain.value = 0;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const now = ctx.currentTime;
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration / 1000);
+        osc.start();
+        osc.stop(now + duration / 1000 + 0.05);
+      }
+
+      async function flashPad(color, duration = 350) {
+        const pad = padMap[color];
+        if (!pad) return;
+        pad.classList.add("active");
+        playTone(color, duration);
+        await sleep(duration);
+        pad.classList.remove("active");
+      }
+
+      async function playSequence(sequence) {
+        for (const color of sequence) {
+          await flashPad(color, 360);
+          await sleep(120);
+        }
+      }
+
+      function randomColor() {
+        const colors = Object.keys(toneMap);
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      function updateScore(label, value) {
+        scoreLabel.textContent = label;
+        scoreValue.textContent = value;
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function setTurnHint(text) {
+        turnHint.textContent = text;
+      }
+
+      function defaultWsUrl() {
+        if (window.location.protocol === "https:") {
+          return `wss://${window.location.host}`;
+        }
+        if (window.location.protocol === "http:") {
+          return `ws://${window.location.host}`;
+        }
+        return "ws://localhost:3000";
+      }
+
+      function setConnectionStatus(state, label) {
+        connectionStatus.textContent = label;
+        connectionStatus.classList.remove("online", "offline", "pending");
+        connectionStatus.classList.add(state);
+      }
+
+      function applyTheme(themeId) {
+        const theme = themes.find((item) => item.id === themeId) || themes[0];
+        Object.entries(theme.vars).forEach(([key, value]) => {
+          document.documentElement.style.setProperty(key, value);
+        });
+        themeSelect.value = theme.id;
+        localStorage.setItem("simon-theme", theme.id);
+      }
+
+      function loadTheme() {
+        const saved = localStorage.getItem("simon-theme");
+        if (saved && themes.some((theme) => theme.id === saved)) {
+          applyTheme(saved);
+        } else {
+          applyTheme(themes[0].id);
+        }
+      }
+
+      function connectSocket() {
+        const url = serverUrlInput.value.trim() || defaultWsUrl();
+        serverUrlInput.value = url;
+        if (!url) {
+          showError("Enter a server URL to connect.");
+          return;
+        }
+        if (socket) socket.close();
+        setConnectionStatus("pending", "Connecting");
+        showError("");
+        try {
+          socket = new WebSocket(url);
+        } catch (err) {
+          setConnectionStatus("offline", "Offline");
+          showError("Invalid server URL.");
+          return;
+        }
+
+        socket.onopen = () => {
+          socketReady = true;
+          setConnectionStatus("online", "Online");
+          if (pendingAction) {
+            const action = pendingAction;
+            pendingAction = null;
+            action();
+          }
+        };
+
+        socket.onclose = () => {
+          socketReady = false;
+          setConnectionStatus("offline", "Offline");
+        };
+
+        socket.onerror = () => {
+          socketReady = false;
+          setConnectionStatus("offline", "Offline");
+        };
+
+        socket.onmessage = (event) => {
+          let message = null;
+          try {
+            message = JSON.parse(event.data);
+          } catch (err) {
+            return;
+          }
+          handleServerMessage(message);
+        };
+      }
+
+      function ensureConnected(action) {
+        if (socketReady) {
+          action();
+        } else {
+          pendingAction = action;
+          connectSocket();
+        }
+      }
+
+      function sendMessage(payload) {
+        if (!socketReady || !socket) return;
+        socket.send(JSON.stringify(payload));
+      }
+
+      function clearRoomState() {
+        roomState = null;
+        roomId = null;
+        multiReady = false;
+        lastReplayToken = "";
+        serverInfo.classList.add("hidden");
+        playersList.innerHTML = "";
+        spectatorsList.innerHTML = "";
+        scoreboardList.innerHTML = "";
+        chatMessages.innerHTML = "";
+        updateScore("Round", 0);
+        chatSendBtn.disabled = true;
+        chatInput.disabled = true;
+        if (mode === "multi") {
+          setStatus("Create or join a server.");
+          setTurnHint("Server mode: take turns and add a color.");
+        }
+        resetBtn.disabled = true;
+      }
+
+      function handleServerMessage(message) {
+        if (message.type === "state") {
+          roomState = message.room;
+          roomId = roomState.id;
+          renderRoom();
+          return;
+        }
+        if (message.type === "error") {
+          showError(message.message || "Server error.");
+          return;
+        }
+        if (message.type === "roomClosed") {
+          showError(message.message || "Room closed.");
+          clearRoomState();
+        }
+      }
+
+      function setMode(newMode) {
+        mode = newMode;
+        modeSoloBtn.classList.toggle("active", mode === "solo");
+        modeMultiBtn.classList.toggle("active", mode === "multi");
+        soloPanel.classList.toggle("hidden", mode !== "solo");
+        multiPanel.classList.toggle("hidden", mode !== "multi");
+        startBtn.disabled = mode === "multi";
+        resetBtn.disabled = mode === "multi" ? !isHost() : false;
+        setStatus(mode === "solo" ? "Press start to play." : "Create or join a server.");
+        setTurnHint(
+          mode === "solo"
+            ? "Solo mode: repeat the sequence."
+            : "Server mode: take turns and add a color."
+        );
+        updateScore(mode === "solo" ? "Score" : "Round", 0);
+      }
+
+      function resetSolo() {
+        soloState.sequence = [];
+        soloState.step = 0;
+        soloState.awaiting = false;
+        soloState.playing = false;
+        soloState.score = 0;
+        updateScore("Score", 0);
+        setStatus("Press start to play.");
+        setTurnHint("Solo mode: repeat the sequence.");
+      }
+
+      async function startSolo() {
+        resetSolo();
+        await nextSoloRound();
+      }
+
+      async function nextSoloRound() {
+        soloState.playing = true;
+        soloState.awaiting = false;
+        soloState.sequence.push(randomColor());
+        soloState.step = 0;
+        soloState.score = soloState.sequence.length;
+        updateScore("Score", soloState.score);
+        setStatus("Listen to the sequence.");
+        setTurnHint("Listen to the sequence.");
+        await sleep(400);
+        await playSequence(soloState.sequence);
+        soloState.playing = false;
+        soloState.awaiting = true;
+        setStatus("Your turn.");
+        setTurnHint("Your turn.");
+      }
+
+      function soloGameOver() {
+        soloState.awaiting = false;
+        soloState.playing = false;
+        setStatus(`Game over. Score ${soloState.score}.`);
+        setTurnHint("Press start to try again.");
+      }
+
+      function validName() {
+        return playerNameInput.value.trim();
+      }
+
+      function showError(message) {
+        multiError.textContent = message || "";
+      }
+
+      function getActivePlayerIndex(state) {
+        if (!state || state.players.length === 0) return -1;
+        let idx = Math.min(state.turnIndex || 0, state.players.length - 1);
+        if (state.players[idx] && state.players[idx].status === "active") return idx;
+        return state.players.findIndex((player) => player.status === "active");
+      }
+
+      function currentPlayer() {
+        if (!roomState) return null;
+        const idx = getActivePlayerIndex(roomState);
+        return idx >= 0 ? roomState.players[idx] : null;
+      }
+
+      function isHost() {
+        return roomState && roomState.hostId === playerId;
+      }
+
+      function isActivePlayer() {
+        const player = currentPlayer();
+        return player && player.id === playerId;
+      }
+
+      function isSpectator() {
+        if (!roomState || !Array.isArray(roomState.spectators)) return false;
+        return roomState.spectators.some((spectator) => spectator.id === playerId);
+      }
+
+      function renderPlayers(state) {
+        playersList.innerHTML = "";
+        if (!state) return;
+        const activeIdx = getActivePlayerIndex(state);
+        state.players.forEach((player, index) => {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = player.name || "Player";
+          li.appendChild(name);
+
+          const badge = document.createElement("span");
+          badge.className = "you";
+          if (player.id === playerId) badge.textContent = "YOU";
+          li.appendChild(badge);
+
+          if (index === activeIdx) li.classList.add("turn");
+          if (player.status !== "active") li.classList.add("out");
+          playersList.appendChild(li);
+        });
+      }
+
+      function renderSpectators(state) {
+        spectatorsList.innerHTML = "";
+        if (!state || !Array.isArray(state.spectators) || state.spectators.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "No spectators yet.";
+          spectatorsList.appendChild(li);
+          return;
+        }
+        state.spectators.forEach((spectator) => {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = spectator.name || "Spectator";
+          li.appendChild(name);
+
+          const badge = document.createElement("span");
+          badge.className = "you";
+          if (spectator.id === playerId) badge.textContent = "YOU";
+          li.appendChild(badge);
+          spectatorsList.appendChild(li);
+        });
+      }
+
+      function renderScoreboard(state) {
+        scoreboardList.innerHTML = "";
+        if (!state || !state.scoreboard) {
+          const li = document.createElement("li");
+          li.textContent = "No scores yet.";
+          scoreboardList.appendChild(li);
+          return;
+        }
+
+        const entries = Object.values(state.scoreboard).filter((entry) => entry.name);
+        if (entries.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "No scores yet.";
+          scoreboardList.appendChild(li);
+          return;
+        }
+
+        entries.sort((a, b) => {
+          if (b.best !== a.best) return b.best - a.best;
+          return a.name.localeCompare(b.name);
+        });
+
+        entries.forEach((entry) => {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = entry.name;
+          const score = document.createElement("span");
+          score.className = "score";
+          score.textContent = entry.best;
+          li.appendChild(name);
+          li.appendChild(score);
+          scoreboardList.appendChild(li);
+        });
+      }
+
+      function renderChat(state) {
+        chatMessages.innerHTML = "";
+        if (!state || !Array.isArray(state.chat) || state.chat.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "chat-message";
+          empty.textContent = "No messages yet.";
+          chatMessages.appendChild(empty);
+          return;
+        }
+
+        state.chat.forEach((entry) => {
+          const msg = document.createElement("div");
+          msg.className = "chat-message";
+          const meta = document.createElement("div");
+          meta.className = "chat-meta";
+          const time = new Date(entry.time).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          meta.textContent = `${time} · ${entry.name}`;
+          const text = document.createElement("div");
+          text.textContent = entry.text;
+          msg.appendChild(meta);
+          msg.appendChild(text);
+          chatMessages.appendChild(msg);
+        });
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function renderRoom() {
+        if (!roomState) return;
+        renderPlayers(roomState);
+        renderSpectators(roomState);
+        renderScoreboard(roomState);
+        renderChat(roomState);
+        serverInfo.classList.remove("hidden");
+        serverCodeDisplay.textContent = roomState.id;
+        updateScore("Round", roomState.sequence.length);
+        chatSendBtn.disabled = false;
+        chatInput.disabled = false;
+
+        const active = currentPlayer();
+        const activeName = active ? active.name : "Unknown";
+        const spectatorMode = isSpectator();
+
+        if (roomState.stage === "over") {
+          const winner = roomState.players.find((player) => player.status === "active");
+          setStatus(winner ? `Game over. Winner: ${winner.name}.` : "Game over.");
+          setTurnHint("Reset the server to play again.");
+          multiReady = false;
+          resetBtn.disabled = !isHost();
+          return;
+        }
+
+        if (spectatorMode) {
+          setStatus("Spectating this match.");
+          setTurnHint("Chat with players and watch the sequence.");
+        } else if (isActivePlayer()) {
+          if (roomState.stage === "replay") {
+            setStatus("Your turn: replay the sequence.");
+            setTurnHint(multiReady ? "Repeat the sequence now." : "Watch the sequence.");
+          } else {
+            setStatus("Your turn: add one new color.");
+            setTurnHint("Tap any pad to add the next color.");
+          }
+        } else {
+          setStatus(`Waiting for ${activeName}.`);
+          setTurnHint("Watch the sequence and get ready.");
+        }
+
+        resetBtn.disabled = !isHost();
+
+        maybePlayMultiplayerSequence();
+      }
+
+      async function maybePlayMultiplayerSequence() {
+        if (!roomState || roomState.stage !== "replay" || roomState.sequence.length === 0) {
+          multiReady = isActivePlayer() && roomState && roomState.stage === "add";
+          return;
+        }
+
+        const token = `${roomState.turnCounter}-${roomState.turnIndex}-${roomState.sequence.length}`;
+        if (token === lastReplayToken) return;
+        lastReplayToken = token;
+        multiReady = false;
+        await sleep(200);
+        await playSequence(roomState.sequence);
+        multiReady = isActivePlayer();
+        if (isActivePlayer()) {
+          setTurnHint("Repeat the sequence now.");
+        }
+      }
+
+      function createServer() {
+        const name = validName();
+        if (!name) {
+          showError("Enter your name to create a server.");
+          return;
+        }
+        spectatorToggle.checked = false;
+        ensureConnected(() => {
+          sendMessage({ type: "create", name, playerId });
+        });
+      }
+
+      function joinServer() {
+        const name = validName();
+        const code = serverCodeInput.value.trim().toUpperCase();
+        if (!name) {
+          showError("Enter your name to join a server.");
+          return;
+        }
+        if (!code) {
+          showError("Enter a server code to join.");
+          return;
+        }
+        const spectator = spectatorToggle.checked;
+        ensureConnected(() => {
+          sendMessage({ type: "join", name, code, playerId, spectator });
+        });
+      }
+
+      function leaveServer() {
+        if (!roomState) return;
+        if (socketReady) {
+          sendMessage({ type: "leave" });
+        }
+        clearRoomState();
+        showError("");
+      }
+
+      function resetServerGame() {
+        if (!roomState || !isHost()) return;
+        ensureConnected(() => {
+          sendMessage({ type: "reset" });
+        });
+      }
+
+      function sendChat() {
+        if (!roomState) {
+          showError("Join a server to chat.");
+          return;
+        }
+        const text = chatInput.value.trim();
+        if (!text) return;
+        ensureConnected(() => {
+          sendMessage({ type: "chat", text });
+        });
+        chatInput.value = "";
+      }
+
+      function handleSoloInput(color) {
+        if (!soloState.awaiting || soloState.playing) return;
+        flashPad(color, 220);
+        if (color !== soloState.sequence[soloState.step]) {
+          soloGameOver();
+          return;
+        }
+        soloState.step += 1;
+        if (soloState.step >= soloState.sequence.length) {
+          soloState.awaiting = false;
+          setStatus("Nice! Next round...");
+          setTimeout(() => nextSoloRound(), 500);
+        }
+      }
+
+      function handleMultiplayerInput(color) {
+        if (!roomState || !isActivePlayer()) return;
+        if (roomState.stage === "replay" && !multiReady) return;
+        if (roomState.stage === "over") return;
+        flashPad(color, 220);
+        ensureConnected(() => {
+          sendMessage({ type: "input", color });
+        });
+      }
+
+      padButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const color = btn.dataset.color;
+          if (mode === "solo") {
+            handleSoloInput(color);
+          } else {
+            handleMultiplayerInput(color);
+          }
+        });
+      });
+
+      startBtn.addEventListener("click", () => {
+        if (mode === "solo") startSolo();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        if (mode === "solo") resetSolo();
+        if (mode === "multi") resetServerGame();
+      });
+
+      muteBtn.addEventListener("click", () => {
+        muted = !muted;
+        muteBtn.textContent = muted ? "Unmute" : "Mute";
+      });
+
+      modeSoloBtn.addEventListener("click", () => {
+        if (mode !== "solo") {
+          if (roomState) leaveServer();
+          setMode("solo");
+        }
+      });
+
+      modeMultiBtn.addEventListener("click", () => {
+        if (mode !== "multi") {
+          setMode("multi");
+          connectSocket();
+        }
+      });
+
+      connectBtn.addEventListener("click", connectSocket);
+      createServerBtn.addEventListener("click", createServer);
+      joinServerBtn.addEventListener("click", joinServer);
+      leaveServerBtn.addEventListener("click", leaveServer);
+      chatSendBtn.addEventListener("click", sendChat);
+
+      chatInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendChat();
+        }
+      });
+
+      copyCodeBtn.addEventListener("click", () => {
+        if (!roomState) return;
+        navigator.clipboard
+          .writeText(roomState.id)
+          .then(() => showError("Code copied!"))
+          .catch(() => showError("Copy failed. Select and copy manually."));
+      });
+
+      playerNameInput.addEventListener("input", () => {
+        if (playerNameInput.value.trim()) {
+          showError("");
+        }
+      });
+
+      serverCodeInput.addEventListener("input", () => {
+        serverCodeInput.value = serverCodeInput.value.toUpperCase();
+      });
+
+      themeSelect.addEventListener("change", () => {
+        applyTheme(themeSelect.value);
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (socketReady && roomState) {
+          sendMessage({ type: "leave" });
+        }
+      });
+
+      document.addEventListener("pointerdown", primeAudio, { once: true });
+
+      themes.forEach((theme) => {
+        const option = document.createElement("option");
+        option.value = theme.id;
+        option.textContent = theme.name;
+        themeSelect.appendChild(option);
+      });
+
+      setMode("solo");
+      resetSolo();
+      loadTheme();
+      serverUrlInput.value = defaultWsUrl();
+      chatSendBtn.disabled = true;
+      chatInput.disabled = true;
+      connectSocket();
+    </script>
+  </body>
+</html>
+
+
+
+
+
+
+
