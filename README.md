@@ -65,3 +65,8 @@ Your selection is saved locally in your browser.
 - `index.html` — the game UI and client logic
 - `server.js` — the multiplayer server (WebSocket + HTTP)
 - `package.json` — dependencies and scripts
+
+## Play Online
+
+- https://adhrit-simon-game.onrender.com
+
